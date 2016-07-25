@@ -1,10 +1,11 @@
 'use strict'
 const express = require('express'),
+	  bodyParser = require('body-parser'),
 	  app = express(),
 	  port = 3000,
 	  Authorization = 'Basic VsJX0LSys1UJvblOz5W2',
 	  MongoClient = require('mongodb').MongoClient,
-	  url = 'mongodb://localhost:27017/test';
+	  url = 'mongodb://mickeymac.local:27017/test';
 	  MongoClient.connect(url, function(err, db) {
 		 if(!err){
 		 	new Server(db,app).init();
@@ -22,16 +23,48 @@ class Server{
 	init(){
 
 		this.config();
+		
 		app.listen(3000);
 	}
 
 	config(){
 
 		var self = this;
+		this.app.use(bodyParser.json()); // support json encoded bodies
+		this.app.use(bodyParser.urlencoded({ extended: true }));
+		this.app.post('/getGeoCode', (req,res)=>{
+			if(req.header("Authorization") != Authorization){
+				res.status(400);
+				res.end('Bad Authorizattion')
+			}else{
+				console.log("POST: ");
+				console.log(req.body);
+				self.db.collection('insGeoId').findOne({_id:req.body.location}, (err,ele)=>{
+					if(!err && !ele){
+						self.db.collection('insGeoId').insertOne({
+							_id: req.body.location,
+							lat: req.body.lat,
+							lon: req.body.lon,
+						}, (err)=>{
 
+							if(!err){
 
+								res.json({result: "NEW GEO", op:"ADDED"})
+							}
+						})
+					}else if(!err && ele){
+
+						res.json({result: "DUPLICATE GEO", op: "NONE"})
+
+					}else{
+
+						res.json({result: "", op: "UNKNOW_ERROR"})
+					}				
+				})
+				
+			}
+		});
 		this.app.get('/verifyMediaId/:mediaId',(req,res)=>{
-
 			if(req.header('Authorization') != Authorization){
 
 				res.status(400);
