@@ -32,10 +32,30 @@ class Server{
 		var self = this;
 		this.app.use(bodyParser.json()); // support json encoded bodies
 		this.app.use(bodyParser.urlencoded({ extended: true }));
+		this.app.get('/getGeoCode/:geoId', (req,res)=>{
+			if(req.header('Authorization') != Authorization){
+				res.status(400);
+				res.end('BAD Authorization');
+			}else{
+				console.log(req.params.geoId);
+				self.db.collection('insGeoId').findOne({_id:req.params.geoId},(err,ele)=>{
+					if(!err && !ele){
+						res.json({result: "NOT_FOUND", op: "NONE"});
+					}else if(!err && ele){
+						res.json({result: "FOUND", op: "NONE"});
+					}else{
+						res.json({result: "", op: "UNKNOW_ERROR"})
+					}
+				})
+			}
+		});//get 
+
+
+
 		this.app.post('/getGeoCode', (req,res)=>{
 			if(req.header("Authorization") != Authorization){
 				res.status(400);
-				res.end('Bad Authorizattion')
+				res.end('Bad Authorization')
 			}else{
 				console.log("POST: ");
 				console.log(req.body);
@@ -49,12 +69,12 @@ class Server{
 
 							if(!err){
 
-								res.json({result: "NEW GEO", op:"ADDED"})
+								res.json({result: "NEW_GEO", op:"ADDED"})
 							}
 						})
 					}else if(!err && ele){
 
-						res.json({result: "DUPLICATE GEO", op: "NONE"})
+						res.json({result: "DUPLICATE_GEO", op: "NONE"})
 
 					}else{
 
@@ -69,7 +89,7 @@ class Server{
 			if(req.header('Authorization') != Authorization){
 
 				res.status(400);
-				res.end('Bad Authorizattion')
+				res.end('Bad Authorization')
 
 			}else{
 
