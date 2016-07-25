@@ -2,8 +2,6 @@
 var request =  require('request');
 var FormData = require('form-data');
 
-
-
 var NodeGeocoder = require('node-geocoder');
 var options = {
   provider: 'google',
@@ -24,7 +22,7 @@ class insUploader{
 		this.tagList=[];
 		this.searchingTag = tag;
 		this.imageList = null;
-		this.pageSize = 20;
+		this.pageSize = 100;
 	}
 
 	retrictImageList(){
@@ -90,7 +88,7 @@ class insUploader{
 					//console.log(self.imageList[i])
 					self.getSingleInfo(self.imageList[i].code,self.imageList[i].thumbnail_src);
 
-			}, i * 0)
+			}, i * 3000)
 		}
 	}
 
@@ -108,6 +106,8 @@ class insUploader{
 	}
 
 	uploadImage(location,tagListF,body){
+
+			var self = this;
 
 			let uploadImage = {
 
@@ -139,7 +139,7 @@ class insUploader{
 
 
 			request({
-						url:'https://api.scopephotos.com/v1/image',o
+						url:'https://api.scopephotos.com/v1/image',
 						method:'POST',
 						headers:{
 
@@ -184,9 +184,9 @@ class insUploader{
 				}
 			}
 			if(body.media.location){
-				geocoder.geocode(body.media.location.name, function(err, res) {
-					console.log(res[0].latitude,res[0].longitude)
-					if(res[0]){
+				geocoder.geocode(body.media.location.name,(err, res)=>{
+					console.log(res)
+					if(res[0] && res[0].latitude && res[0].longtitude ){
 						self.uploadImage({
 						  address:body.media.location,
 						  latitude:res[0].latitude,
@@ -206,4 +206,4 @@ class insUploader{
 
 }
 
-new insUploader('china').retrictImageList();
+new insUploader('shantou').retrictImageList();
