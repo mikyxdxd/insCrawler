@@ -172,6 +172,24 @@ class insUploader{
 			// })
 
 	}
+	postGeoID(location, lat, lon){
+		request({
+					method:'POST',
+					url:'http://localhost:3000/getGeoCode',
+					headers:{
+					'Authorization':'Basic VsJX0LSys1UJvblOz5W2'
+					},
+					form:{
+						'location':body.media.location.name,
+						'lat': lat,
+						'lon': lon
+					},function(err,res){
+						console.log(err);
+						if(!err)   console.log(res.body);
+					}
+		});
+	}
+
 
 	uploadToScope(body){
 
@@ -201,20 +219,39 @@ class insUploader{
 				}
 			}
 			if(body.media.location){
-				geocoder.geocode(body.media.location.name,(err, res)=>{
-					console.log(res)
-					if(res[0] && res[0].latitude && res[0].longtitude ){
-						self.uploadImage({
-						  address:body.media.location,
-						  latitude:res[0].latitude,
-						  longtitude:res[0].longitude
-						},tagListF,body);
+				request({
+					method:'GET',
+					url:`http://localhost:3000/getGeoCode/${body.media.location}`,
+					headers:{
+					'Authorization':'Basic VsJX0LSys1UJvblOz5W2'
+					},
+					form:{
+						'location':body.media.location.name
+					},function(err,res){
+						console.log(err, res.body);
+						res.body = JSON.parse(res.body);
+						if(!err){
+							if(res.body.result == "NOT_FOUND"){
+								geocoder.geocode(body.media.location.name,(err, res)=>{
+									console.log(res)
+									if(res[0] && res[0].latitude && res[0].longtitude ){
+										self.uploadImage({
+										  address:body.media.location,
+										  latitude:res[0].latitude,
+										  longtitude:res[0].longitude
+										},tagListF,body);
+										postGeoID(body.media.location, res[0].latitude, res[0].longtitude);
+									}else{
 
-					}else{
+										self.uploadImage(null,tagListF,body);
+									}
+								})
+							}
+						}
 
-						self.uploadImage(null,tagListF,body);
 					}
 				})
+				
 			}else{
 
 				self.uploadImage(null,tagListF,body);
