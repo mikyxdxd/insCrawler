@@ -10,19 +10,16 @@ var options = {
 };
 var geocoder = NodeGeocoder(options);
 
-
-
-
 class insUploader{
 
 	constructor(tag){
 
 		this.token = ''
-		this.startingCurson = '1302301334460794949';
+		this.startingCurson = '';
 		this.tagList=[];
 		this.searchingTag = tag;
 		this.imageList = null;
-		this.pageSize = 100;
+		this.pageSize = 2;
 	}
 
 	retrictImageList(){
@@ -85,24 +82,44 @@ class insUploader{
 		for(let i in this.imageList){
 
 			setTimeout(()=>{
-					//console.log(self.imageList[i])
-					self.getSingleInfo(self.imageList[i].code,self.imageList[i].thumbnail_src);
 
-			}, i * 3000)
+				self.getSingleInfo(self.imageList[i].code,self.imageList[i].thumbnail_src);
+
+			}, i * 5000)
 		}
 	}
 
 	getSingleInfo(code,thumbnail_src){
 
 		var self = this;
-		request.get(`https://www.instagram.com/p/${code}/?tagged=${self.searchingTag}&__a=1`,(err,res,body)=>{
+		//verify unique
+		request.get({url:`http://198.11.247.166:3000/verifyMediaId/${code}`,headers:{
 
-			body = JSON.parse(body);
-			body.thumbnail_src = thumbnail_src;
-			self.uploadToScope(body);
+			'Authorization':'Basic VsJX0LSys1UJvblOz5W2'
+
+		}},(err,res,body)=>{
+
+			console.log(JSON.parse(body).result)
+
+			if(JSON.parse(body).result == 'NEW'){
+
+				request.get(`https://www.instagram.com/p/${code}/?tagged=${self.searchingTag}&__a=1`,(err,res,body)=>{
+
+					body = JSON.parse(body);
+					body.thumbnail_src = thumbnail_src;
+					self.uploadToScope(body);
+
+				})
+			}
 
 		})
 
+	}
+
+	verifyDuplicate(code){
+
+		console.log(code);
+		return false;
 	}
 
 	uploadImage(location,tagListF,body){
@@ -138,21 +155,21 @@ class insUploader{
 			console.log(self.token)
 
 
-			request({
-						url:'https://api.scopephotos.com/v1/image',
-						method:'POST',
-						headers:{
+			// request({
+			// 			url:'https://api.scopephotos.com/v1/image',
+			// 			method:'POST',
+			// 			headers:{
 
-						"Authorization":self.token,
-						"Content-Type":"application/json"
-						},
-						body:JSON.stringify(
-							uploadImage
-						)
-						},function(err,res){
-						console.log('upload rsult');
-						console.log(err,res.body);
-			})
+			// 			"Authorization":self.token,
+			// 			"Content-Type":"application/json"
+			// 			},
+			// 			body:JSON.stringify(
+			// 				uploadImage
+			// 			)
+			// 			},function(err,res){
+			// 			console.log('upload rsult');
+			// 			console.log(err,res.body);
+			// })
 
 	}
 

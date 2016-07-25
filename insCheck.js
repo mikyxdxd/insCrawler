@@ -29,7 +29,6 @@ class Server{
 
 		var self = this;
 
-
 		this.app.get('/verifyMediaId/:mediaId',(req,res)=>{
 
 			if(req.header('Authorization') != Authorization){
