@@ -2,6 +2,19 @@
 var request =  require('request');
 var FormData = require('form-data');
 
+
+
+var NodeGeocoder = require('node-geocoder');
+var options = {
+  provider: 'google',
+  httpAdapter: 'https', // Default
+  apiKey: 'AIzaSyAfCqfoU_wEzLdtCsFQgIgtUxVWF5i7A4Y', // for Mapquest, OpenCage, Google Premier
+};
+var geocoder = NodeGeocoder(options);
+
+
+
+
 class insUploader{
 
 	constructor(tag){
@@ -11,7 +24,7 @@ class insUploader{
 		this.tagList=[];
 		this.searchingTag = tag;
 		this.imageList = null;
-		this.pageSize = 5;
+		this.pageSize = 20;
 	}
 
 	retrictImageList(){
@@ -74,7 +87,7 @@ class insUploader{
 		for(let i in this.imageList){
 
 			setTimeout(()=>{
-					console.log(self.imageList[i])
+					//console.log(self.imageList[i])
 					self.getSingleInfo(self.imageList[i].code,self.imageList[i].thumbnail_src);
 
 			}, i * 0)
@@ -91,6 +104,55 @@ class insUploader{
 			self.uploadToScope(body);
 
 		})
+
+	}
+
+	uploadImage(location,tagListF,body){
+
+			let uploadImage = {
+
+				'mediaType':'IMAGE',
+				'description':body.media.caption,
+				'shotTime':body.media.date * 1000,
+				'uploadTime':Date.now(),
+				'location':location,
+				'tags':tagListF,
+				'mediaData':[
+
+					{'fileName':body.media.display_src,'width':body.media.dimensions.width,'height':body.media.dimensions.height,'resolution':'RTN'},
+					{'fileName':body.thumbnail_src,'width':293,'height':293,'resolution':'TMB'}
+
+				],
+				sourceOwner:{
+
+					'id':body.media.owner.id,
+					'username':body.media.owner.username,
+					'profile_picture':body.media.owner.profile_pic_url
+
+				},
+				sourceType:'IN'
+			}
+
+			console.log('uploadImage')
+			console.log(uploadImage);
+			console.log(self.token)
+
+
+			request({
+						url:'https://api.scopephotos.com/v1/image',o
+						method:'POST',
+						headers:{
+
+						"Authorization":self.token,
+						"Content-Type":"application/json"
+						},
+						body:JSON.stringify(
+							uploadImage
+						)
+						},function(err,res){
+						console.log('upload rsult');
+						console.log(err,res.body);
+			})
 
 	}
 
@@ -121,51 +183,26 @@ class insUploader{
 					tagListF.push({'text':tagList[t].trim(),'probability':1});
 				}
 			}
-			let uploadImage = {
+			if(body.media.location){
+				geocoder.geocode(body.media.location.name, function(err, res) {
+					console.log(res[0].latitude,res[0].longitude)
+					if(res[0]){
+						self.uploadImage({
+						  address:body.media.location,
+						  latitude:res[0].latitude,
+						  longtitude:res[0].longitude
+						},tagListF,body);
 
-				'mediaType':'IMAGE',
-				'description':body.media.caption,
-				'shotTime':body.media.date * 1000,
-				'uploadTime':Date.now(),
-				'location':body.media.location?{'text':body.media.location.name}:null,
-				'tags':tagListF,
-				'mediaData':[
+					}else{
 
-					{'fileName':body.media.display_src,'width':body.media.dimensions.width,'height':body.media.dimensions.height,'resolution':'RTN'},
-					{'fileName':body.thumbnail_src,'width':293,'height':293,'resolution':'TMB'}
+						self.uploadImage(null,tagListF,body);
+					}
+				})
+			}else{
 
-				],
-				sourceOwner:{
-
-					'id':body.media.owner.id,
-					'username':body.media.owner.username,
-					'profile_picture':body.media.owner.profile_pic_url
-
-				},
-				sourceType:'IN'
+				self.uploadImage(null,tagListF,body);
 			}
-
-			console.log('uploadImage')
-			console.log(uploadImage);
-			console.log(self.token)
-
-
-			request({
-						url:'https://api.scopephotos.com/v1/image',
-						method:'POST',
-						headers:{
-
-						"Authorization":self.token,
-						"Content-Type":"application/json"
-						},
-						body:JSON.stringify(
-							uploadImage
-						)
-						},function(err,res){
-						console.log('upload rsult');
-						console.log(err,res.body);
-						})
-	}
+		}
 
 }
 
