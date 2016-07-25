@@ -1,7 +1,6 @@
 'use strict'
 var request =  require('request');
 var FormData = require('form-data');
-
 var NodeGeocoder = require('node-geocoder');
 var options = {
   provider: 'google',
@@ -19,7 +18,7 @@ class insUploader{
 		this.tagList=[];
 		this.searchingTag = tag;
 		this.imageList = null;
-		this.pageSize = 2;
+		this.pageSize = 10;
 	}
 
 	retrictImageList(){
@@ -85,11 +84,11 @@ class insUploader{
 
 				self.getSingleInfo(self.imageList[i].code,self.imageList[i].thumbnail_src);
 
-			}, i * 5000)
+			}, i * 3000)
 		}
 	}
 
-	getSingleInfo(code,thumbnail_src){
+	getSingleInfo(code,thumbnail_src,index){
 
 		var self = this;
 		//verify unique
@@ -114,12 +113,6 @@ class insUploader{
 
 		})
 
-	}
-
-	verifyDuplicate(code){
-
-		console.log(code);
-		return false;
 	}
 
 	uploadImage(location,tagListF,body){
@@ -155,40 +148,27 @@ class insUploader{
 			console.log(self.token)
 
 
-			// request({
-			// 			url:'https://api.scopephotos.com/v1/image',
-			// 			method:'POST',
-			// 			headers:{
+			request({
+						url:'https://api.scopephotos.com/v1/image',
+						method:'POST',
+						headers:{
 
-			// 			"Authorization":self.token,
-			// 			"Content-Type":"application/json"
-			// 			},
-			// 			body:JSON.stringify(
-			// 				uploadImage
-			// 			)
-			// 			},function(err,res){
-			// 			console.log('upload rsult');
-			// 			console.log(err,res.body);
-			// })
+						"Authorization":self.token,
+						"Content-Type":"application/json"
+						},
+						body:JSON.stringify(
+							uploadImage
+						)
+						},function(err,res){
+						console.log('upload rsult');
+						console.log(err,res.body);
+			})
 
 	}
 
 	uploadToScope(body){
 
 		var self = this;
-
-
-			//body.media.dimensions.width
-			//body.media.dimensions.height
-			//body.media.owner.username
-			//body.media.owner.profile_pic_url
-			//body.media.owner.id
-			//body.media.caption,
-			//body.media.date
-			//body.media.display_src
-			//body.media.is_ad
-			//body.media.is_video
-			//body.media.location.name
 
 			let tagList = body.media.caption.split('#');
 			let tagListF = [];
@@ -223,4 +203,6 @@ class insUploader{
 
 }
 
-new insUploader('shantou').retrictImageList();
+console.log(process.argv[2])
+
+new insUploader(process.argv[2]).retrictImageList();
