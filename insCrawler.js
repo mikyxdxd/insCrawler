@@ -100,7 +100,7 @@ class insUploader{
 
 			console.log(JSON.parse(body).result)
 
-			if(JSON.parse(body).result == 'NEW'){
+			//if(JSON.parse(body).result == 'NEW'){
 
 				request.get(`https://www.instagram.com/p/${code}/?tagged=${self.searchingTag}&__a=1`,(err,res,body)=>{
 
@@ -109,7 +109,7 @@ class insUploader{
 					self.uploadToScope(body);
 
 				})
-			}
+			//}
 
 		})
 
@@ -118,6 +118,8 @@ class insUploader{
 	uploadImage(location,tagListF,body){
 
 			var self = this;
+
+			console.log('after',location)
 
 			let uploadImage = {
 
@@ -143,26 +145,26 @@ class insUploader{
 				sourceType:'IN'
 			}
 
-			console.log('uploadImage')
-			console.log(uploadImage);
-			console.log(self.token)
+				// console.log('uploadImage')
+				// console.log(uploadImage);
+				// console.log(self.token)
 
 
-			request({
-						url:'https://api.scopephotos.com/v1/image',
-						method:'POST',
-						headers:{
+			// request({
+			// 			url:'https://api.scopephotos.com/v1/image',
+			// 			method:'POST',
+			// 			headers:{
 
-						"Authorization":self.token,
-						"Content-Type":"application/json"
-						},
-						body:JSON.stringify(
-							uploadImage
-						)
-						},function(err,res){
-						console.log('upload rsult');
-						console.log(err,res.body);
-			})
+			// 			"Authorization":self.token,
+			// 			"Content-Type":"application/json"
+			// 			},
+			// 			body:JSON.stringify(
+			// 				uploadImage
+			// 			)
+			// 			},function(err,res){
+			// 			console.log('upload rsult');
+			// 			console.log(err,res.body);
+			// })
 
 	}
 
@@ -181,20 +183,59 @@ class insUploader{
 				}
 			}
 			if(body.media.location){
-				geocoder.geocode(body.media.location.name,(err, res)=>{
-					console.log(res)
-					if(res[0] && res[0].latitude && res[0].longtitude ){
-						self.uploadImage({
-						  address:body.media.location,
-						  latitude:res[0].latitude,
-						  longtitude:res[0].longitude
-						},tagListF,body);
 
-					}else{
+				request.post({url:"http://localhost:3000/getGeoCode",headers:{
+					'Authorization':'Basic VsJX0LSys1UJvblOz5W2',
+				},
+				 form:{ op:'LOOK_UP',location: body.media.location.name}
 
-						self.uploadImage(null,tagListF,body);
+				},(err,_res,_body)=>{
+
+					_body = JSON.parse(_body);
+
+					if(_body.result == 'NOT_FOUND'){
+						geocoder.geocode(body.media.location.name,(err, res)=>{
+
+							console.log(err,res)
+
+							if(!err && res[0] && res[0].latitude && res[0].longitude ){
+
+							console.log(res[0])
+
+							request.post({url:"http://localhost:3000/getGeoCode",headers:{
+							'Authorization':'Basic VsJX0LSys1UJvblOz5W2',
+							},
+							form:{ op:'INSERT',location:res[0],location_name:body.media.location.name}
+							},()=>{
+
+							self.uploadImage({
+								address:body.media.location.name,
+								latitude:res[0].latitude,
+								longtitude:res[0].longitude
+							},tagListF,body);
+
+						})
+
+						}else{
+
+							self.uploadImage(null,tagListF,body);
+						  }
+						})
+					}else if(_body.result == 'FOUND'){
+
+							self.uploadImage({
+								address:_body.location._id,
+								latitude:_body.location.latitude,
+								longtitude:_body.location.longitude
+							},tagListF,body);
 					}
+
 				})
+
+
+
+
+
 			}else{
 
 				self.uploadImage(null,tagListF,body);
@@ -203,6 +244,8 @@ class insUploader{
 
 }
 
-console.log(process.argv[2])
-
 new insUploader(process.argv[2]).retrictImageList();
+
+
+
+
